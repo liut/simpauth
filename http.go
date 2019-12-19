@@ -2,9 +2,11 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // vars
@@ -12,6 +14,9 @@ var (
 	CookieName   = "_user"
 	CookiePath   = "/"
 	CookieMaxAge = 3600
+	ParamName    = "token"
+
+	ErrNoTokenInRequest = errors.New("no token present in request")
 )
 
 type ctxKey int
@@ -23,8 +28,8 @@ const (
 
 // Option ...
 type Option struct {
-	uri     string
-	refresh bool
+	URI     string // redirect URI
+	Refresh bool   // need Refresh
 }
 
 // OptFunc ...
@@ -33,40 +38,46 @@ type OptFunc func(opt *Option)
 // WithURI The option with redirect uri
 func WithURI(uri string) OptFunc {
 	return func(opt *Option) {
-		opt.uri = uri
+		opt.URI = uri
 	}
 }
 
 // WithRefresh The option with auto refresh
 func WithRefresh() OptFunc {
 	return func(opt *Option) {
-		opt.refresh = true
+		opt.Refresh = true
 	}
 }
 
-// Middleware ...
-func Middleware(opts ...OptFunc) func(next http.Handler) http.Handler {
+// NewOption ...
+func NewOption(opts ...OptFunc) *Option {
 	var option Option
 	for _, fn := range opts {
 		fn(&option)
 	}
+	return &option
+}
+
+// Middleware ...
+func Middleware(opts ...OptFunc) func(next http.Handler) http.Handler {
+	option := NewOption(opts...)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			user, err := UserFromRequest(req)
 			if err != nil {
-				if option.uri != "" {
-					http.Redirect(rw, req, option.uri, http.StatusFound)
+				if option.URI != "" {
+					http.Redirect(rw, req, option.URI, http.StatusFound)
 				} else {
 					http.Error(rw, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				}
 				return
 			}
-			if option.refresh && user.NeedRefresh() {
+			if option.Refresh && user.NeedRefresh() {
 				user.Refresh()
 				user.Signin(rw) // TODO: custom cookieName somethings
 			}
 
-			req = req.WithContext(context.WithValue(req.Context(), UserKey, user))
+			req = req.WithContext(ContextWithUser(req.Context(), user))
 			next.ServeHTTP(rw, req)
 		})
 	}
@@ -82,6 +93,11 @@ func WithUnauthorized() func(next http.Handler) http.Handler {
 	return Middleware()
 }
 
+// ContextWithUser ...
+func ContextWithUser(ctx context.Context, user *User) context.Context {
+	return context.WithValue(ctx, UserKey, user)
+}
+
 // UserFromContext ...
 func UserFromContext(ctx context.Context) (*User, bool) {
 	if ctx == nil {
@@ -95,14 +111,14 @@ func UserFromContext(ctx context.Context) (*User, bool) {
 
 // UserFromRequest get user from cookie
 func UserFromRequest(r *http.Request) (user *User, err error) {
-	var cookie *http.Cookie
-	cookie, err = r.Cookie(CookieName)
+	var token string
+	token, err = TokenFromRequest(r)
 	if err != nil {
-		log.Printf("cookie %q ERR %s", CookieName, err)
+		log.Print(err)
 		return
 	}
 	user = new(User)
-	err = user.Decode(cookie.Value)
+	err = user.Decode(token)
 	if err != nil {
 		log.Printf("decode user ERR %s", err)
 		return
@@ -113,6 +129,31 @@ func UserFromRequest(r *http.Request) (user *User, err error) {
 	}
 	// log.Printf("got user %v", user)
 	return
+}
+
+// TokenFromRequest get a token from request
+func TokenFromRequest(req *http.Request) (string, error) {
+	// Look for an Authorization header
+	if ah := req.Header.Get("Authorization"); ah != "" {
+		// Should be a bearer token
+		if len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
+			return ah[7:], nil
+		}
+	}
+
+	if ck, err := req.Cookie(CookieName); err == nil {
+		if ck.Value != "" {
+			return ck.Value, nil
+		}
+	}
+
+	// Look for "auth_token" parameter
+	req.ParseMultipartForm(10e6)
+	if tokStr := req.Form.Get(ParamName); tokStr != "" {
+		return tokStr, nil
+	}
+
+	return "", ErrNoTokenInRequest
 }
 
 // Signin call Signin for login
