@@ -16,7 +16,6 @@ func TestHTTPSignin(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user.Refresh()
 		user.Signin(w)
-		Signin(user, w)
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer ts.Close()
