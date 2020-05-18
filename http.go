@@ -132,28 +132,58 @@ func UserFromRequest(r *http.Request) (user *User, err error) {
 }
 
 // TokenFromRequest get a token from request
-func TokenFromRequest(req *http.Request) (string, error) {
-	// Look for an Authorization header
-	if ah := req.Header.Get("Authorization"); ah != "" {
-		// Should be a bearer token
-		if len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
-			return ah[7:], nil
+func TokenFromRequest(req *http.Request) (s string, err error) {
+	s = TokenFrom(req.Header, req)
+	if len(s) == 0 {
+		err = ErrNoTokenInRequest
+	}
+	return
+}
+
+// Getter ...
+type Getter interface {
+	Get(k string) string
+}
+
+// Cookier ...
+type Cookier interface {
+	Cookie(k string) (*http.Cookie, error)
+}
+
+// FormValuer ...
+type FormValuer interface {
+	FormValue(k string) string
+}
+
+type cookieser interface{ Cookies(k string) string }
+
+// TokenFrom return token string
+// valid interfaces: *http.Request, Request.Header, *fiber.Ctx
+func TokenFrom(args ...interface{}) string {
+	for _, arg := range args {
+		if v, ok := arg.(Getter); ok { // request.Header, fiber.Ctx
+			if ah := v.Get("Authorization"); len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
+				return ah[7:]
+			}
+		}
+
+		if v, ok := arg.(Cookier); ok { // request
+			if ck, err := v.Cookie(CookieName); err == nil && ck.Value != "" {
+				return ck.Value
+			}
+		}
+		if v, ok := arg.(cookieser); ok { // fiber.Ctx
+			if s := v.Cookies(CookieName); s != "" {
+				return s
+			}
+		}
+		if v, ok := arg.(FormValuer); ok { // request form, fiber.Ctx
+			if s := v.FormValue(ParamName); s != "" {
+				return s
+			}
 		}
 	}
-
-	if ck, err := req.Cookie(CookieName); err == nil {
-		if ck.Value != "" {
-			return ck.Value, nil
-		}
-	}
-
-	// Look for "auth_token" parameter
-	req.ParseMultipartForm(10e6)
-	if tokStr := req.Form.Get(ParamName); tokStr != "" {
-		return tokStr, nil
-	}
-
-	return "", ErrNoTokenInRequest
+	return ""
 }
 
 // Signin call Signin for login
