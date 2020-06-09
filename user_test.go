@@ -10,7 +10,7 @@ import (
 func TestUser(t *testing.T) {
 
 	stamp := time.Now().Unix()
-	user := &User{UID: "test", Name: "name", LastHit: stamp}
+	user := &User{UID: "test", Name: "name", LastHit: stamp, Roles: []string{"member"}}
 	b, err := user.Encode()
 	assert.Nil(t, err)
 	assert.True(t, len(b) > 0)
@@ -20,6 +20,8 @@ func TestUser(t *testing.T) {
 	assert.NotEmpty(t, out.UID, out.Name)
 	assert.NotZero(t, out.LastHit)
 	assert.Equal(t, user.UID, out.UID)
+	assert.False(t, user.Roles.Has("admin"))
+	assert.True(t, user.Roles.Has("member"))
 }
 
 func TestUserEncode(t *testing.T) {

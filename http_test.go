@@ -8,6 +8,7 @@ import (
 )
 
 func TestHTTPSignin(t *testing.T) {
+	opt := NewOption(WithCookie("myname", "/", "localhost"), WithMaxAge(1800), WithRefresh(), WithURI("/"))
 	var user = &User{
 		UID:  "testUID",
 		Name: "testName",
@@ -15,7 +16,7 @@ func TestHTTPSignin(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user.Refresh()
-		user.Signin(w)
+		opt.Signin(user, w)
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer ts.Close()
@@ -40,6 +41,7 @@ type vector struct {
 }
 
 func TestHTTPBack(t *testing.T) {
+	opt := NewOption(WithCookie("myname", "/", "localhost"), WithMaxAge(1800), WithRefresh())
 	var user = &User{
 		UID:  "testUID",
 		Name: "testName",
@@ -52,13 +54,14 @@ func TestHTTPBack(t *testing.T) {
 	}
 	t.Logf("refresh: %d, token: %s", user.LastHit, token)
 
-	mw := Middleware(WithRefresh())
+	mw := opt.Middleware()
 	ts := httptest.NewServer(mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, ok := UserFromContext(r.Context())
 		if !ok {
 			t.Fatal("userFromContext fail")
 		}
 		t.Logf("user %v", user)
+		opt.Signout(w)
 	})))
 
 	defer ts.Close()
@@ -74,10 +77,10 @@ func TestHTTPBack(t *testing.T) {
 	vectors = append(vectors, vector{name: "from head", req: req, want: 200})
 
 	req, _ = http.NewRequest("GET", ts.URL, nil)
-	req.AddCookie(&http.Cookie{Name: CookieName, Value: token})
+	req.AddCookie(&http.Cookie{Name: dftOpt.CookieName, Value: token})
 	vectors = append(vectors, vector{name: "from cookie", req: req, want: 200})
 
-	req, _ = http.NewRequest("GET", ts.URL+"/?"+ParamName+"="+token, nil)
+	req, _ = http.NewRequest("GET", ts.URL+"/?"+dftOpt.ParamName+"="+token, nil)
 	vectors = append(vectors, vector{name: "from cookie", req: req, want: 200})
 
 	client := ts.Client()
