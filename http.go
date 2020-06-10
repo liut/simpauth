@@ -17,19 +17,20 @@ type Authorizer interface {
 	Cooking(value string) *http.Cookie
 	Signin(user Encoder, w http.ResponseWriter) error
 	Signout(w http.ResponseWriter)
+	With(opts ...OptFunc)
 }
 
 // vars
 var (
 	ErrNoTokenInRequest = errors.New("no token present in request")
 
-	dftOpt *Option
+	dftOpt *option
 
-	_ Authorizer = (*Option)(nil)
+	_ Authorizer = (*option)(nil)
 )
 
 func init() {
-	dftOpt = &Option{
+	dftOpt = &option{
 		CookieName:   "_user",
 		CookiePath:   "/",
 		CookieMaxAge: 3600,
@@ -37,8 +38,8 @@ func init() {
 	}
 }
 
-// Option ...
-type Option struct {
+// option ...
+type option struct {
 	URI          string // redirect URI
 	Refresh      bool   // need Refresh
 	CookieName   string
@@ -48,9 +49,9 @@ type Option struct {
 	ParamName    string
 }
 
-func (opt *Option) setDefaults() {
+func (opt *option) setDefaults() {
 	if opt == nil {
-		opt = new(Option)
+		opt = new(option)
 	}
 	if len(opt.CookieName) == 0 {
 		opt.CookieName = dftOpt.CookieName
@@ -63,33 +64,51 @@ func (opt *Option) setDefaults() {
 	}
 }
 
+func (opt *option) With(opts ...OptFunc) {
+	for _, fn := range opts {
+		fn(opt)
+	}
+	opt.setDefaults()
+}
+
 // OptFunc ...
-type OptFunc func(opt *Option)
+type OptFunc func(opt *option)
 
 // WithURI The option with redirect uri
 func WithURI(uri string) OptFunc {
-	return func(opt *Option) {
-		opt.URI = uri
+	return func(opt *option) {
+		if len(uri) > 0 {
+			opt.URI = uri
+		}
 	}
 }
 
 // WithRefresh The option with auto refresh
 func WithRefresh() OptFunc {
-	return func(opt *Option) {
+	return func(opt *option) {
 		opt.Refresh = true
 	}
 }
 
 // WithCookie set cookie 1-3 options: name, path, domain, see also http.Cookie
 func WithCookie(strs ...string) OptFunc {
-	return func(opt *Option) {
+	return func(opt *option) {
 		n := len(strs)
 		if n > 0 {
-			opt.CookieName = strs[0]
+			if len(strs[0]) > 0 {
+				opt.CookieName = strs[0]
+			}
+
 			if n > 1 {
-				opt.CookiePath = strs[1]
+				if len(strs[1]) > 0 {
+					opt.CookiePath = strs[1]
+				}
+
 				if n > 2 {
-					opt.CookieDomain = strs[2]
+					if len(strs[2]) > 0 {
+						opt.CookieDomain = strs[2]
+					}
+
 				}
 			}
 		}
@@ -98,7 +117,7 @@ func WithCookie(strs ...string) OptFunc {
 
 // WithMaxAge set cookie max age: >= 0, default 3600, see also http.Cookie
 func WithMaxAge(age int) OptFunc {
-	return func(opt *Option) {
+	return func(opt *option) {
 		if age >= 0 {
 			opt.CookieMaxAge = age
 		}
@@ -110,16 +129,13 @@ func NewOption(opts ...OptFunc) Authorizer {
 	return New(opts...)
 }
 
-// New build Option with args
+// New build option with args
 func New(opts ...OptFunc) Authorizer {
 	if len(opts) == 0 {
 		return dftOpt
 	}
-	option := new(Option)
-	for _, fn := range opts {
-		fn(option)
-	}
-	option.setDefaults()
+	option := new(option)
+	option.With(opts...)
 	return option
 }
 
@@ -129,7 +145,12 @@ func Middleware(opts ...OptFunc) func(next http.Handler) http.Handler {
 }
 
 // Middleware ...
-func (opt *Option) Middleware() func(next http.Handler) http.Handler {
+func (opt *option) Middleware() func(next http.Handler) http.Handler {
+	return opt.MiddlewareWordy(false)
+}
+
+// MiddlewareWordy ...
+func (opt *option) MiddlewareWordy(redir bool) func(next http.Handler) http.Handler {
 	if opt == nil {
 		opt = dftOpt
 	}
@@ -137,7 +158,7 @@ func (opt *Option) Middleware() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			user, err := opt.UserFromRequest(req)
 			if err != nil {
-				if opt.URI != "" {
+				if redir && opt.URI != "" {
 					http.Redirect(rw, req, opt.URI, http.StatusFound)
 				} else {
 					http.Error(rw, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -166,7 +187,7 @@ func UserFromRequest(r *http.Request) (user *User, err error) {
 }
 
 // UserFromRequest get user from cookie
-func (opt *Option) UserFromRequest(r *http.Request) (user *User, err error) {
+func (opt *option) UserFromRequest(r *http.Request) (user *User, err error) {
 	if opt == nil {
 		opt = dftOpt
 	}
@@ -191,7 +212,7 @@ func (opt *Option) UserFromRequest(r *http.Request) (user *User, err error) {
 }
 
 // TokenFromRequest get a token from request
-func (opt *Option) TokenFromRequest(req *http.Request) (s string, err error) {
+func (opt *option) TokenFromRequest(req *http.Request) (s string, err error) {
 	if opt == nil {
 		opt = dftOpt
 	}
@@ -227,7 +248,7 @@ func TokenFrom(args ...interface{}) string {
 
 // TokenFrom return token string
 // valid interfaces: *http.Request, Request.Header, *fiber.Ctx
-func (opt *Option) TokenFrom(args ...interface{}) string {
+func (opt *option) TokenFrom(args ...interface{}) string {
 	if opt == nil {
 		opt = dftOpt
 	}
@@ -273,7 +294,7 @@ func Signin(user Encoder, w http.ResponseWriter) error {
 }
 
 // Signin write user encoded string into cookie
-func (opt *Option) Signin(user Encoder, w http.ResponseWriter) error {
+func (opt *option) Signin(user Encoder, w http.ResponseWriter) error {
 	if opt == nil {
 		opt = dftOpt
 	}
@@ -287,7 +308,7 @@ func (opt *Option) Signin(user Encoder, w http.ResponseWriter) error {
 }
 
 // Cooking ...
-func (opt *Option) Cooking(value string) *http.Cookie {
+func (opt *option) Cooking(value string) *http.Cookie {
 	return &http.Cookie{
 		Name:     opt.CookieName,
 		Value:    value,
@@ -303,7 +324,7 @@ func Signout(w http.ResponseWriter) {
 }
 
 // Signout setcookie with empty
-func (opt *Option) Signout(w http.ResponseWriter) {
+func (opt *option) Signout(w http.ResponseWriter) {
 	if opt == nil {
 		opt = dftOpt
 	}
