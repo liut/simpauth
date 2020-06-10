@@ -1,17 +1,19 @@
 .SILENT :
 .PHONY : generate
 
+WITH_ENV = env `cat .env 2>/dev/null | xargs`
+GO=$(shell which go)
 
 
 vet: ## Run go vet over sources
 	echo "Checking ."
-	go vet -all ./...
+	$(GO) vet -all ./...
 
 
 test: vet ## Run tests
-	@$(WITH_ENV) go test -v -cover -coverprofile cover.out .
-	@ go tool cover -html=cover.out -o cover.out.html
+	@$(WITH_ENV) $(GO) test -v -cover -coverprofile cover.out ./...
+	@ $(GO) tool cover -html=cover.out -o cover.out.html
 
 
 generate:
-	go generate ./...
+	$(GO) generate ./...

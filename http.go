@@ -14,6 +14,7 @@ type Authorizer interface {
 	UserFromRequest(r *http.Request) (user *User, err error)
 	TokenFromRequest(r *http.Request) (s string, err error)
 	TokenFrom(args ...interface{}) string
+	Cooking(value string) *http.Cookie
 	Signin(user Encoder, w http.ResponseWriter) error
 	Signout(w http.ResponseWriter)
 }
@@ -134,7 +135,7 @@ func (opt *Option) Middleware() func(next http.Handler) http.Handler {
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			user, err := UserFromRequest(req)
+			user, err := opt.UserFromRequest(req)
 			if err != nil {
 				if opt.URI != "" {
 					http.Redirect(rw, req, opt.URI, http.StatusFound)
@@ -145,8 +146,8 @@ func (opt *Option) Middleware() func(next http.Handler) http.Handler {
 			}
 			if opt.Refresh && user.NeedRefresh() {
 				user.Refresh()
+				opt.Signin(user, rw)
 			}
-			opt.Signin(user, rw)
 
 			req = req.WithContext(ContextWithUser(req.Context(), user))
 			next.ServeHTTP(rw, req)
@@ -157,11 +158,6 @@ func (opt *Option) Middleware() func(next http.Handler) http.Handler {
 // WithRedirect ... Deprecated by Middleware(WithURI(uri))
 func WithRedirect(uri string) func(next http.Handler) http.Handler {
 	return Middleware(WithURI(uri))
-}
-
-// WithUnauthorized ... Deprecated by Middleware()
-func WithUnauthorized() func(next http.Handler) http.Handler {
-	return Middleware()
 }
 
 // UserFromRequest get user from cookie, deprecated
@@ -286,14 +282,19 @@ func (opt *Option) Signin(user Encoder, w http.ResponseWriter) error {
 		log.Printf("encode user ERR: %s", err)
 		return err
 	}
-	http.SetCookie(w, &http.Cookie{
+	http.SetCookie(w, opt.Cooking(value))
+	return nil
+}
+
+// Cooking ...
+func (opt *Option) Cooking(value string) *http.Cookie {
+	return &http.Cookie{
 		Name:     opt.CookieName,
 		Value:    value,
 		MaxAge:   opt.CookieMaxAge,
 		Path:     opt.CookiePath,
 		HttpOnly: true,
-	})
-	return nil
+	}
 }
 
 // Signout setcookie with empty, deprecated

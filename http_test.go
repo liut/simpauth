@@ -77,7 +77,7 @@ func TestHTTPBack(t *testing.T) {
 	vectors = append(vectors, vector{name: "from head", req: req, want: 200})
 
 	req, _ = http.NewRequest("GET", ts.URL, nil)
-	req.AddCookie(&http.Cookie{Name: dftOpt.CookieName, Value: token})
+	req.AddCookie(opt.Cooking(token))
 	vectors = append(vectors, vector{name: "from cookie", req: req, want: 200})
 
 	req, _ = http.NewRequest("GET", ts.URL+"/?"+dftOpt.ParamName+"="+token, nil)
