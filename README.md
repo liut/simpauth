@@ -8,6 +8,22 @@ For online user in http
 
 import auth "github.com/liut/simpauth"
 
+authoriz := auth.New(
+		auth.WithCookie("myname", "/", "mydomain.net"), // custom cookie: name, path, domain
+		auth.WithMaxAge(1800),                       // set maxage
+		auth.WithRefresh(),                          // auto refresh cookie value
+	)
+
+func login(w http.ResponseWriter, r *http.Request) {
+	// do login check
+	var user = &User{
+		UID:  "eagle",
+		Name: "liut",
+	}
+	user.Refresh()
+	authoriz.Signin(user, w)
+}
+
 func welcome(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.UserFromContext(r.Context())
 	if !ok {
@@ -18,8 +34,8 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	log.Printf("user %v", user.Name)
 }
 
-main() {
-	mw := auth.Middleware(WithRefresh())
+run() {
+	mw := authoriz.Middleware()
 	handler := mw(http.HandlerFunc(welcome)))
 
 	// other routers

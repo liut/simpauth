@@ -41,7 +41,11 @@ type vector struct {
 }
 
 func TestHTTPBack(t *testing.T) {
-	opt := NewOption(WithCookie("myname", "/", "localhost"), WithMaxAge(1800), WithRefresh())
+	opt := NewOption(
+		WithCookie("myname", "/", "localhost"), // custom cookie: name, path, domain
+		WithMaxAge(1800),                       // set maxage
+		WithRefresh(),                          // auto refresh cookie value
+	)
 	var user = &User{
 		UID:  "testUID",
 		Name: "testName",
