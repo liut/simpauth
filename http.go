@@ -11,6 +11,7 @@ import (
 // Authorizer ...
 type Authorizer interface {
 	Middleware() func(next http.Handler) http.Handler
+	MiddlewareWordy(redir bool) func(next http.Handler) http.Handler
 	UserFromRequest(r *http.Request) (user *User, err error)
 	TokenFromRequest(r *http.Request) (s string, err error)
 	TokenFrom(args ...interface{}) string
