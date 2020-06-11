@@ -8,7 +8,10 @@ import (
 )
 
 func TestHTTPSignin(t *testing.T) {
-	opt := NewOption(WithCookie("myname", "/", "localhost"), WithMaxAge(1800), WithRefresh(), WithURI("/"))
+	opt := Default()
+	// opt := NewOption(WithCookie("myname", "/", "localhost"), WithMaxAge(1800), WithRefresh(), WithURI("/"))
+	opt = New()
+	opt.With(WithURI("/"), WithRefresh())
 	var user = &User{
 		UID:  "testUID",
 		Name: "testName",

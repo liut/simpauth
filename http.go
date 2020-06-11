@@ -51,9 +51,6 @@ type option struct {
 }
 
 func (opt *option) setDefaults() {
-	if opt == nil {
-		opt = new(option)
-	}
 	if len(opt.CookieName) == 0 {
 		opt.CookieName = dftOpt.CookieName
 	}
@@ -132,16 +129,21 @@ func NewOption(opts ...OptFunc) Authorizer {
 
 // New build option with args
 func New(opts ...OptFunc) Authorizer {
-	if len(opts) == 0 {
-		return dftOpt
-	}
 	option := new(option)
 	option.With(opts...)
 	return option
 }
 
+// Default return default instance
+func Default() Authorizer {
+	return dftOpt
+}
+
 // Middleware ...
 func Middleware(opts ...OptFunc) func(next http.Handler) http.Handler {
+	if len(opts) == 0 {
+		return Default().Middleware()
+	}
 	return New(opts...).Middleware()
 }
 
@@ -189,9 +191,6 @@ func UserFromRequest(r *http.Request) (user *User, err error) {
 
 // UserFromRequest get user from cookie
 func (opt *option) UserFromRequest(r *http.Request) (user *User, err error) {
-	if opt == nil {
-		opt = dftOpt
-	}
 	var token string
 	token, err = opt.TokenFromRequest(r)
 	if err != nil {
@@ -214,9 +213,6 @@ func (opt *option) UserFromRequest(r *http.Request) (user *User, err error) {
 
 // TokenFromRequest get a token from request
 func (opt *option) TokenFromRequest(req *http.Request) (s string, err error) {
-	if opt == nil {
-		opt = dftOpt
-	}
 	s = opt.TokenFrom(req.Header, req)
 	if len(s) == 0 {
 		err = ErrNoTokenInRequest
@@ -250,9 +246,6 @@ func TokenFrom(args ...interface{}) string {
 // TokenFrom return token string
 // valid interfaces: *http.Request, Request.Header, *fiber.Ctx
 func (opt *option) TokenFrom(args ...interface{}) string {
-	if opt == nil {
-		opt = dftOpt
-	}
 	for _, arg := range args {
 		if v, ok := arg.(Getter); ok { // request.Header, fiber.Ctx
 			if ah := v.Get("Authorization"); len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
@@ -296,9 +289,6 @@ func Signin(user Encoder, w http.ResponseWriter) error {
 
 // Signin write user encoded string into cookie
 func (opt *option) Signin(user Encoder, w http.ResponseWriter) error {
-	if opt == nil {
-		opt = dftOpt
-	}
 	value, err := user.Encode()
 	if err != nil {
 		log.Printf("encode user ERR: %s", err)
@@ -326,9 +316,6 @@ func Signout(w http.ResponseWriter) {
 
 // Signout setcookie with empty
 func (opt *option) Signout(w http.ResponseWriter) {
-	if opt == nil {
-		opt = dftOpt
-	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     opt.CookieName,
 		Value:    "",
