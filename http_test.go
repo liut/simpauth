@@ -8,9 +8,9 @@ import (
 )
 
 func TestHTTPSignin(t *testing.T) {
-	opt := Default()
+	// opt := Default()
 	// opt := NewOption(WithCookie("myname", "/", "localhost"), WithMaxAge(1800), WithRefresh(), WithURI("/"))
-	opt = New()
+	opt := New()
 	opt.With(WithURI("/"), WithRefresh())
 	var user = &User{
 		UID:  "testUID",
@@ -19,7 +19,7 @@ func TestHTTPSignin(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user.Refresh()
-		opt.Signin(user, w)
+		_ = opt.Signin(user, w)
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer ts.Close()

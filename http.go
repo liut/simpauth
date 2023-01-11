@@ -66,7 +66,6 @@ func (opt *option) With(opts ...OptFunc) {
 	for _, fn := range opts {
 		fn(opt)
 	}
-	opt.setDefaults()
 }
 
 // OptFunc ...
@@ -129,9 +128,10 @@ func NewOption(opts ...OptFunc) Authorizer {
 
 // New build option with args
 func New(opts ...OptFunc) Authorizer {
-	option := new(option)
-	option.With(opts...)
-	return option
+	opt := new(option)
+	opt.setDefaults()
+	opt.With(opts...)
+	return opt
 }
 
 // Default return default instance
@@ -170,7 +170,7 @@ func (opt *option) MiddlewareWordy(redir bool) func(next http.Handler) http.Hand
 			}
 			if opt.Refresh && user.NeedRefresh() {
 				user.Refresh()
-				opt.Signin(user, rw)
+				_ = opt.Signin(user, rw)
 			}
 
 			req = req.WithContext(ContextWithUser(req.Context(), user))
