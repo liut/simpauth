@@ -34,7 +34,7 @@ type User struct {
 	Name      string `json:"name" msg:"n"`
 	Avatar    string `json:"avatar,omitempty" msg:"a"`
 	LastHit   int64  `json:"hit,omitempty" msg:"h"`
-	TeamID    int    `json:"tid,omitempty" msg:"t"`
+	TeamID    int64  `json:"tid,omitempty" msg:"t"`
 	Roles     Names  `json:"roles,omitempty" msg:"r"`
 	Watchings Names  `json:"watching,omitempty" msg:"w"`
 }
