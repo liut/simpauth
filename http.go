@@ -220,21 +220,22 @@ func (opt *option) TokenFromRequest(req *http.Request) (s string, err error) {
 	return
 }
 
-// Getter ...
+// Getter ex: Request.Header
 type Getter interface {
 	Get(k string) string
 }
 
-// Cookier ...
+// Cookier ex: http.Request
 type Cookier interface {
 	Cookie(k string) (*http.Cookie, error)
 }
 
-// FormValuer ...
+// FormValuer ex: http.Request
 type FormValuer interface {
 	FormValue(k string) string
 }
 
+// ex: fiber.Ctx
 type cookieser interface{ Cookies(k string) string }
 
 // TokenFrom return token string
