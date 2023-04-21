@@ -39,6 +39,14 @@ type User struct {
 	Watchings Names  `json:"watching,omitempty" msg:"w"`
 }
 
+func (u User) GetUID() string {
+	return u.UID
+}
+
+func (u User) GetName() string {
+	return u.Name
+}
+
 // IsExpired ...
 func (u *User) IsExpired() bool {
 	if UserLifetime <= 0 {
