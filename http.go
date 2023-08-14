@@ -88,24 +88,18 @@ func WithRefresh() OptFunc {
 }
 
 // WithCookie set cookie 1-3 options: name, path, domain, see also http.Cookie
-func WithCookie(strs ...string) OptFunc {
+func WithCookie(name string, args ...string) OptFunc {
 	return func(opt *option) {
-		n := len(strs)
+		opt.CookieName = name
+		n := len(args)
 		if n > 0 {
-			if len(strs[0]) > 0 {
-				opt.CookieName = strs[0]
+			if len(args[0]) > 0 { // path
+				opt.CookiePath = args[0]
 			}
 
 			if n > 1 {
-				if len(strs[1]) > 0 {
-					opt.CookiePath = strs[1]
-				}
-
-				if n > 2 {
-					if len(strs[2]) > 0 {
-						opt.CookieDomain = strs[2]
-					}
-
+				if len(args[1]) > 0 { // domain
+					opt.CookieDomain = args[1]
 				}
 			}
 		}
@@ -121,7 +115,7 @@ func WithMaxAge(age int) OptFunc {
 	}
 }
 
-// NewOption ...
+// NewOption ..., Deprecated by New()
 func NewOption(opts ...OptFunc) Authorizer {
 	return New(opts...)
 }
@@ -184,7 +178,7 @@ func WithRedirect(uri string) func(next http.Handler) http.Handler {
 	return Middleware(WithURI(uri))
 }
 
-// UserFromRequest get user from cookie, deprecated
+// UserFromRequest get user from cookie, Deprecated
 func UserFromRequest(r *http.Request) (user *User, err error) {
 	return dftOpt.UserFromRequest(r)
 }
@@ -283,7 +277,7 @@ type Encoder interface {
 	Encode() (string, error)
 }
 
-// Signin write user encoded string into cookie, deprecated
+// Signin write user encoded string into cookie, Deprecated
 func Signin(user Encoder, w http.ResponseWriter) error {
 	return dftOpt.Signin(user, w)
 }
@@ -310,7 +304,7 @@ func (opt *option) Cooking(value string) *http.Cookie {
 	}
 }
 
-// Signout setcookie with empty, deprecated
+// Signout setcookie with empty, Deprecated
 func Signout(w http.ResponseWriter) {
 	dftOpt.Signout(w)
 }
