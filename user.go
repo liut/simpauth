@@ -2,7 +2,7 @@ package auth
 
 import (
 	"encoding/base64"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -89,14 +89,14 @@ func (u *User) Decode(s string) (err error) {
 	var b []byte
 	b, err = base64.URLEncoding.DecodeString(s)
 	if err != nil {
-		log.Printf("decode token %q ERR %s", s, err)
+		slog.Info("decode token fail", "s", s)
 		return
 	}
 
 	*u = User{}
 	_, err = u.UnmarshalMsg(b)
 	if err != nil {
-		log.Printf("unmarshal(%d) to msgpack from %q ERR %s", len(b), s, err)
+		slog.Info("unmarshal msg fail", "b", len(b), "s", s, "err", err)
 	}
 
 	return

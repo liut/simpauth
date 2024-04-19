@@ -3,7 +3,7 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -188,20 +188,20 @@ func (opt *option) UserFromRequest(r *http.Request) (user *User, err error) {
 	var token string
 	token, err = opt.TokenFromRequest(r)
 	if err != nil {
-		log.Printf("%s, cookie %s", err, opt.CookieName)
+		slog.Info("no token in req", "cn", opt.CookieName, "err", err)
 		return
 	}
 	user = new(User)
 	err = user.Decode(token)
 	if err != nil {
-		log.Printf("decode user ERR %s", err)
+		slog.Info("decode fail", "token", token, "err", err)
 		return
 	}
 	if user.IsExpired() {
-		log.Printf("user %s is expired", user.UID)
+		slog.Info("expired", "token", token, "uid", user.UID)
 		err = fmt.Errorf("user %s is expired", user.UID)
 	}
-	// log.Printf("got user %v", user)
+	// slog.Debug("got usr from req", "user", user)
 	return
 }
 
@@ -286,7 +286,7 @@ func Signin(user Encoder, w http.ResponseWriter) error {
 func (opt *option) Signin(user Encoder, w http.ResponseWriter) error {
 	value, err := user.Encode()
 	if err != nil {
-		log.Printf("encode user ERR: %s", err)
+		slog.Info("encode fail", "err", err)
 		return err
 	}
 	http.SetCookie(w, opt.Cooking(value))
