@@ -14,7 +14,7 @@ type Authorizer interface {
 	MiddlewareWordy(redir bool) func(next http.Handler) http.Handler
 	UserFromRequest(r *http.Request) (user *User, err error)
 	TokenFromRequest(r *http.Request) (s string, err error)
-	TokenFrom(args ...interface{}) string
+	TokenFrom(args ...any) string
 	Cooking(value string) *http.Cookie
 	Signin(user Encoder, w http.ResponseWriter) error
 	Signout(w http.ResponseWriter)
@@ -115,7 +115,7 @@ func WithMaxAge(age int) OptFunc {
 	}
 }
 
-// NewOption ..., Deprecated by New()
+// NewOption ..., Deprecated: use New()
 func NewOption(opts ...OptFunc) Authorizer {
 	return New(opts...)
 }
@@ -234,13 +234,13 @@ type cookieser interface{ Cookies(k string) string }
 
 // TokenFrom return token string
 // valid interfaces: *http.Request, Request.Header, *fiber.Ctx
-func TokenFrom(args ...interface{}) string {
+func TokenFrom(args ...any) string {
 	return New().TokenFrom(args...)
 }
 
 // TokenFrom return token string
 // valid interfaces: *http.Request, Request.Header, *fiber.Ctx
-func (opt *option) TokenFrom(args ...interface{}) string {
+func (opt *option) TokenFrom(args ...any) string {
 	for _, arg := range args {
 		if v, ok := arg.(Getter); ok { // request.Header, fiber.Ctx
 			if ah := v.Get("Authorization"); len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
