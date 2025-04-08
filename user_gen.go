@@ -52,9 +52,12 @@ func (z Names) Msgsize() (s int) {
 // MarshalMsg implements msgp.Marshaler
 func (z *User) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 7
+	// map header, size 8
+	// string "i"
+	o = append(o, 0x88, 0xa1, 0x69)
+	o = msgp.AppendString(o, z.OID)
 	// string "u"
-	o = append(o, 0x87, 0xa1, 0x75)
+	o = append(o, 0xa1, 0x75)
 	o = msgp.AppendString(o, z.UID)
 	// string "n"
 	o = append(o, 0xa1, 0x6e)
@@ -101,6 +104,12 @@ func (z *User) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
+		case "i":
+			z.OID, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "OID")
+				return
+			}
 		case "u":
 			z.UID, bts, err = msgp.ReadStringBytes(bts)
 			if err != nil {
@@ -183,7 +192,7 @@ func (z *User) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *User) Msgsize() (s int) {
-	s = 1 + 2 + msgp.StringPrefixSize + len(z.UID) + 2 + msgp.StringPrefixSize + len(z.Name) + 2 + msgp.StringPrefixSize + len(z.Avatar) + 2 + msgp.Int64Size + 2 + msgp.Int64Size + 2 + msgp.ArrayHeaderSize
+	s = 1 + 2 + msgp.StringPrefixSize + len(z.OID) + 2 + msgp.StringPrefixSize + len(z.UID) + 2 + msgp.StringPrefixSize + len(z.Name) + 2 + msgp.StringPrefixSize + len(z.Avatar) + 2 + msgp.Int64Size + 2 + msgp.Int64Size + 2 + msgp.ArrayHeaderSize
 	for za0001 := range z.Roles {
 		s += msgp.StringPrefixSize + len(z.Roles[za0001])
 	}

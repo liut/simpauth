@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/base64"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 )
@@ -20,18 +21,14 @@ type Names []string
 
 // Has ...
 func (z Names) Has(name string) bool {
-	for _, item := range z {
-		if item == name {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(z, name)
 }
 
 // User 在线用户
 type User struct {
-	UID       string `json:"uid" msg:"u"`
-	Name      string `json:"name" msg:"n"`
+	OID       string `json:"oid,omitempty" msg:"i"` // pk id, objectID, see define in andvari
+	UID       string `json:"uid" msg:"u"`           // username, login name
+	Name      string `json:"name" msg:"n"`          // nickname, realname, display name
 	Avatar    string `json:"avatar,omitempty" msg:"a"`
 	LastHit   int64  `json:"hit,omitempty" msg:"h"`
 	TeamID    int64  `json:"tid,omitempty" msg:"t"`
