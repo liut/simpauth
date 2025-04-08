@@ -158,7 +158,7 @@ func (opt *option) MiddlewareWordy(redir bool) func(next http.Handler) http.Hand
 				if redir && opt.URI != "" {
 					http.Redirect(rw, req, opt.URI, http.StatusFound)
 				} else {
-					http.Error(rw, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+					http.Error(rw, err.Error(), http.StatusUnauthorized)
 				}
 				return
 			}
