@@ -26,14 +26,14 @@ func (z Names) Has(name string) bool {
 
 // User 在线用户
 type User struct {
-	OID       string `json:"oid,omitempty" msg:"i"` // pk id, objectID, see define in andvari
+	OID       string `json:"oid,omitzero" msg:"i"` // pk id, objectID, see define in andvari
 	UID       string `json:"uid" msg:"u"`           // username, login name
-	Name      string `json:"name" msg:"n"`          // nickname, realname, display name
-	Avatar    string `json:"avatar,omitempty" msg:"a"`
-	LastHit   int64  `json:"hit,omitempty" msg:"h"`
-	TeamID    int64  `json:"tid,omitempty" msg:"t"`
-	Roles     Names  `json:"roles,omitempty" msg:"r"`
-	Watchings Names  `json:"watching,omitempty" msg:"w"`
+	Name      string `json:"name" msg:"n"`         // nickname, realname, display name
+	Avatar    string `json:"avatar,omitzero" msg:"a"`
+	LastHit   int64  `json:"hit,omitzero" msg:"h"`
+	TeamID    int64  `json:"tid,omitzero" msg:"t"`
+	Roles     Names  `json:"roles,omitzero" msg:"r"`
+	Watchings Names  `json:"watching,omitzero" msg:"w"`
 }
 
 func (u User) GetUID() string {
