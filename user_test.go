@@ -169,8 +169,8 @@ func TestSigninWithEncoderError(t *testing.T) {
 }
 
 func TestUserFromContextNil(t *testing.T) {
-	// Test with nil context
-	u, ok := UserFromContext(nil)
+	// Test with TODO context
+	u, ok := UserFromContext(context.TODO())
 	assert.Nil(t, u)
 	assert.False(t, ok)
 
