@@ -8,12 +8,29 @@ import (
 	"time"
 )
 
+// IUser ...
+type IUser interface {
+	GetOID() string
+	GetUID() string  // uid
+	GetName() string // nickname
+	GetAvatar() string
+}
+
+func ToUser(u IUser) User {
+	return User{
+		OID:    u.GetOID(),
+		UID:    u.GetUID(),
+		Name:   u.GetName(),
+		Avatar: u.GetAvatar(),
+	}
+}
+
 //go:generate msgp -io=false
 
 // vars
 var (
-	UserLifetime int64 = 3600
-	Guest              = &User{}
+	DefaultLifetime int64 = 3600
+	Guest                 = &User{}
 )
 
 // Names ...
@@ -27,7 +44,7 @@ func (z Names) Has(name string) bool {
 // User 在线用户
 type User struct {
 	OID       string `json:"oid,omitzero" msg:"i"` // pk id, objectID, see define in andvari
-	UID       string `json:"uid" msg:"u"`           // username, login name
+	UID       string `json:"uid" msg:"u"`          // username, login name
 	Name      string `json:"name" msg:"n"`         // nickname, realname, display name
 	Avatar    string `json:"avatar,omitzero" msg:"a"`
 	LastHit   int64  `json:"hit,omitzero" msg:"h"`
@@ -46,20 +63,30 @@ func (u User) GetName() string {
 
 // IsExpired ...
 func (u *User) IsExpired() bool {
-	if UserLifetime <= 0 {
-		return false
-	}
-	return u.LastHit+int64(UserLifetime) < time.Now().Unix()
+	return u.IsExpiredWith(DefaultLifetime)
 }
 
-// NeedRefresh ...
+// IsExpiredWith checks if the user is expired with given lifetime in seconds.
+func (u *User) IsExpiredWith(lifetime int64) bool {
+	if lifetime <= 0 {
+		return false
+	}
+	return u.LastHit+int64(lifetime) < time.Now().Unix()
+}
+
+// NeedRefresh checks if the user needs refresh.
 func (u *User) NeedRefresh() bool {
+	return u.NeedRefreshWith(DefaultLifetime)
+}
+
+// NeedRefreshWith checks if the user needs refresh with given lifetime in seconds.
+func (u *User) NeedRefreshWith(lifetime int64) bool {
 	gash := time.Now().Unix() - u.LastHit
-	if UserLifetime == 0 || gash > UserLifetime { // expired
+	if lifetime == 0 || gash > lifetime {
 		return false
 	}
 
-	return gash < UserLifetime && gash > UserLifetime/2
+	return gash < lifetime && gash > lifetime/2
 }
 
 // Refresh lastHit to time Unix

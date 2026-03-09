@@ -54,7 +54,7 @@ func TestHTTPBack(t *testing.T) {
 		Name: "testName",
 	}
 	// user.Refresh()
-	user.LastHit = time.Now().Unix() - UserLifetime + 10
+	user.LastHit = time.Now().Unix() - DefaultLifetime + 10
 	token, err := user.Encode()
 	if err != nil {
 		t.Fatalf("encode fail %s", err)
