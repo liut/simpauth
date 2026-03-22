@@ -184,7 +184,7 @@ func TestTokenFromCookie(t *testing.T) {
 
 func TestTokenFromForm(t *testing.T) {
 	opt := New()
-	req := httptest.NewRequest("POST", "/?token=formtoken", nil)
+	req := httptest.NewRequest("POST", "/?userToken=formtoken", nil)
 
 	token := opt.TokenFrom(req)
 	assert.Equal(t, "formtoken", token)
@@ -244,7 +244,7 @@ func TestTokenFromGetterNoBearer(t *testing.T) {
 	getter := &mockGetter{
 		data: map[string]string{
 			"Authorization": "Basic dXNlcjpwYXNz", // Basic auth, not Bearer
-			"token":         "fromtoken",
+			"User-Token":     "fromtoken",
 		},
 	}
 
@@ -258,7 +258,7 @@ func TestTokenFromGetterEmptyAuthorization(t *testing.T) {
 	getter := &mockGetter{
 		data: map[string]string{
 			"Authorization": "",
-			"token":         "tokenvalue",
+			"User-Token":    "tokenvalue",
 		},
 	}
 
@@ -305,10 +305,10 @@ func TestTokenFromCookieser(t *testing.T) {
 
 func TestTokenFromFormValuer(t *testing.T) {
 	opt := New()
-	// Test FormValuer interface (uses default ParamName "token")
+	// Test FormValuer interface (uses default ParamName "userToken")
 	form := &mockFormValuer{
 		data: map[string]string{
-			"token": "formvalue",
+			"userToken": "formvalue",
 		},
 	}
 
@@ -554,7 +554,7 @@ func TestGlobalMiddleware(t *testing.T) {
 }
 
 func TestGlobalTokenFrom(t *testing.T) {
-	token := TokenFrom(http.Header{"Token": {"global"}})
+	token := TokenFrom(http.Header{"User-Token": {"global"}})
 	assert.Equal(t, "global", token)
 
 	token = TokenFrom()

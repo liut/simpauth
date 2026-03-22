@@ -35,8 +35,8 @@ func init() {
 		CookieName:   "_user",
 		CookiePath:   "/",
 		CookieMaxAge: 3600,
-		HeaderKey:    "token",
-		ParamName:    "token",
+		HeaderKey:    "User-Token",
+		ParamName:    "userToken",
 	}
 }
 
