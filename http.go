@@ -35,6 +35,7 @@ func init() {
 		CookieName:   "_user",
 		CookiePath:   "/",
 		CookieMaxAge: 3600,
+		HeaderKey:    "token",
 		ParamName:    "token",
 	}
 }
@@ -47,6 +48,7 @@ type option struct {
 	CookiePath   string
 	CookieDomain string
 	CookieMaxAge int
+	HeaderKey    string
 	ParamName    string
 }
 
@@ -56,6 +58,9 @@ func (opt *option) setDefaults() {
 	}
 	if len(opt.CookiePath) == 0 {
 		opt.CookiePath = dftOpt.CookiePath
+	}
+	if len(opt.HeaderKey) == 0 {
+		opt.HeaderKey = dftOpt.HeaderKey
 	}
 	if len(opt.ParamName) == 0 {
 		opt.ParamName = dftOpt.ParamName
@@ -102,6 +107,14 @@ func WithCookie(name string, args ...string) OptFunc {
 					opt.CookieDomain = args[1]
 				}
 			}
+		}
+	}
+}
+
+func WithHeader(key string) OptFunc {
+	return func(opt *option) {
+		if len(key) > 0 {
+			opt.HeaderKey = key
 		}
 	}
 }
@@ -235,7 +248,7 @@ type cookieser interface{ Cookies(k string) string }
 // TokenFrom return token string
 // valid interfaces: *http.Request, Request.Header, *fiber.Ctx
 func TokenFrom(args ...any) string {
-	return New().TokenFrom(args...)
+	return dftOpt.TokenFrom(args...)
 }
 
 // TokenFrom return token string
@@ -245,6 +258,10 @@ func (opt *option) TokenFrom(args ...any) string {
 		if v, ok := arg.(Getter); ok { // request.Header, fiber.Ctx
 			if ah := v.Get("Authorization"); len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
 				return ah[7:]
+			}
+
+			if ah := v.Get(opt.HeaderKey); len(ah) > 0 {
+				return ah
 			}
 		}
 
@@ -300,6 +317,7 @@ func (opt *option) Cooking(value string) *http.Cookie {
 		Value:    value,
 		MaxAge:   opt.CookieMaxAge,
 		Path:     opt.CookiePath,
+		Domain:   opt.CookieDomain,
 		HttpOnly: true,
 	}
 }
