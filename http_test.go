@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -48,7 +49,7 @@ func TestHTTPBack(t *testing.T) {
 	ts := httptest.NewServer(mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, ok := UserFromContext(r.Context())
 		assert.True(t, ok)
-		assert.Equal(t, user.UID, u.UID)
+		assert.Equal(t, user.UID, u.GetUID())
 		opt.Signout(w)
 	})))
 	defer ts.Close()
@@ -244,7 +245,7 @@ func TestTokenFromGetterNoBearer(t *testing.T) {
 	getter := &mockGetter{
 		data: map[string]string{
 			"Authorization": "Basic dXNlcjpwYXNz", // Basic auth, not Bearer
-			"User-Token":     "fromtoken",
+			"User-Token":    "fromtoken",
 		},
 	}
 
@@ -451,7 +452,7 @@ func TestMiddlewareWithRefresh(t *testing.T) {
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, ok := UserFromContext(r.Context())
 		assert.True(t, ok)
-		assert.Equal(t, user.UID, u.UID)
+		assert.Equal(t, user.UID, u.GetUID())
 	}))
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -471,7 +472,7 @@ func TestMiddlewareContextWithUser(t *testing.T) {
 	token, err := user.Encode()
 	assert.Nil(t, err)
 
-	var gotUser *User
+	var gotUser IUser
 	mw := opt.Middleware()
 
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -487,11 +488,11 @@ func TestMiddlewareContextWithUser(t *testing.T) {
 
 	handler.ServeHTTP(w, req)
 
-	assert.Equal(t, user.UID, gotUser.UID)
+	assert.Equal(t, user.UID, gotUser.GetUID())
 }
 
 func TestContextWithUserNil(t *testing.T) {
-	u, ok := UserFromContext(nil)
+	u, ok := UserFromContext(context.TODO())
 	assert.Nil(t, u)
 	assert.False(t, ok)
 }

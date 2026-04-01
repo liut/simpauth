@@ -55,6 +55,10 @@ type User struct {
 	Watchings Names  `json:"watching,omitzero" msg:"w"`
 }
 
+func (u User) GetOID() string {
+	return u.OID
+}
+
 func (u User) GetUID() string {
 	return u.UID
 }

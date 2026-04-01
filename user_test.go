@@ -187,7 +187,7 @@ func TestUserFromContextWithUser(t *testing.T) {
 
 	got, ok := UserFromContext(ctx)
 	assert.True(t, ok)
-	assert.Equal(t, u.UID, got.UID)
+	assert.Equal(t, u.GetUID(), got.GetUID())
 }
 
 func TestToUserEmpty(t *testing.T) {
