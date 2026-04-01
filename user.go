@@ -31,6 +31,8 @@ func ToUser(u IUser) User {
 var (
 	DefaultLifetime int64 = 3600
 	Guest                 = &User{}
+
+	_ IUser = (*User)(nil)
 )
 
 // Names ...
@@ -59,6 +61,10 @@ func (u User) GetUID() string {
 
 func (u User) GetName() string {
 	return u.Name
+}
+
+func (u User) GetAvatar() string {
+	return u.Avatar
 }
 
 // IsExpired ...
